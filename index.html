@@ -1,38 +1,81 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
-    <meta charset="UTF-8"><meta name="viewport"
-      content="width=device-width,
-               initial-scale=1.0,
-               maximum-scale=1.0,
-               user-scalable=no">
 
-<title>LiveMuse Call</title>
+    <meta charset="UTF-8">
 
-<style>
-    html,
-    body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        background: #000000;
-        overflow: hidden;
-    }
+    <meta name="viewport"
+          content="width=device-width,
+                   initial-scale=1.0,
+                   maximum-scale=1.0,
+                   user-scalable=no">
 
-    #jitsi {
-        position: absolute;
-        left: 0;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: 100%;
-        height: 100%;
-    }
-</style>
+    <title>LiveMuse Call</title>
 
-</head><body><div id="jitsi"></div><script src="https://meet.jit.si/external_api.js"></script><script>
+    <style>
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000;
+            overflow: hidden;
+        }
+
+        #jitsi {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #status {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            padding: 8px;
+            z-index: 9999;
+            background: rgba(0,0,0,0.75);
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            text-align: center;
+            pointer-events: none;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div id="jitsi"></div>
+
+<div id="status">
+    Starting LiveMuse...
+</div>
+
+<script src="https://meet.jit.si/external_api.js"></script>
+
+<script>
 
 var api = null;
+
+function setStatus(text) {
+
+    var status =
+        document.getElementById("status");
+
+    if (status) {
+        status.innerHTML = text;
+    }
+}
 
 function getRoom() {
 
@@ -49,10 +92,24 @@ function startCall() {
     var room = getRoom();
 
     if (!room) {
+
+        setStatus(
+            "ERROR: No room"
+        );
+
         return;
     }
 
+    setStatus(
+        "Connecting..."
+    );
+
     if (typeof JitsiMeetExternalAPI === "undefined") {
+
+        setStatus(
+            "ERROR: Jitsi API not loaded"
+        );
+
         return;
     }
 
@@ -86,11 +143,15 @@ function startCall() {
 
                     enableWelcomePage: false,
 
+                    enableClosePage: false,
+
                     requireDisplayName: false,
 
                     startWithAudioMuted: false,
 
                     startWithVideoMuted: false,
+
+                    disableAP: true,
 
                     p2p: {
                         enabled: true
@@ -111,6 +172,128 @@ function startCall() {
                 }
             }
         );
+
+    api.addEventListener(
+        "videoConferenceJoined",
+        function (event) {
+
+            setStatus(
+                ""
+            );
+
+            try {
+
+                if (
+                    window.AndroidBridge
+                    &&
+                    window.AndroidBridge.onJoined
+                ) {
+
+                    window.AndroidBridge.onJoined();
+
+                }
+
+            } catch (e) {
+            }
+
+        }
+    );
+
+    api.addEventListener(
+        "videoConferenceLeft",
+        function (event) {
+
+            try {
+
+                if (
+                    window.AndroidBridge
+                    &&
+                    window.AndroidBridge.onLeft
+                ) {
+
+                    window.AndroidBridge.onLeft();
+
+                }
+
+            } catch (e) {
+            }
+
+        }
+    );
+
+    api.addEventListener(
+        "readyToClose",
+        function () {
+
+            try {
+
+                if (
+                    window.AndroidBridge
+                    &&
+                    window.AndroidBridge.onLeft
+                ) {
+
+                    window.AndroidBridge.onLeft();
+
+                }
+
+            } catch (e) {
+            }
+
+        }
+    );
+
+    api.addEventListener(
+        "cameraError",
+        function (event) {
+
+            setStatus(
+                "Camera error"
+            );
+
+            console.log(
+                "Jitsi camera error",
+                event
+            );
+
+        }
+    );
+
+    api.addEventListener(
+        "micError",
+        function (event) {
+
+            setStatus(
+                "Microphone error"
+            );
+
+            console.log(
+                "Jitsi microphone error",
+                event
+            );
+
+        }
+    );
+
+    api.addEventListener(
+        "errorOccurred",
+        function (event) {
+
+            setStatus(
+                "Jitsi error"
+            );
+
+            console.log(
+                "Jitsi error",
+                event
+            );
+
+        }
+    );
+
+    setStatus(
+        "Jitsi loaded"
+    );
 }
 
 window.onload =
@@ -120,5 +303,7 @@ window.onload =
 
     };
 
-</script></body>
+</script>
+
+</body>
 </html>
