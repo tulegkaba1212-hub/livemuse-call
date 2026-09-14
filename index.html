@@ -1,308 +1,139 @@
 <!DOCTYPE html>
 <html>
 <head>
-
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width,
-                   initial-scale=1.0,
-                   maximum-scale=1.0,
-                   user-scalable=no">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
 
     <title>LiveMuse Call</title>
 
     <style>
-
         html,
         body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            background: #000000;
             overflow: hidden;
+            background: #000000;
         }
 
-        #jitsi {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
+        #jitsi-container {
             width: 100%;
             height: 100%;
+            background: #000000;
         }
-
-        #status {
-            position: absolute;
-            left: 0;
-            right: 0;
-            top: 0;
-            padding: 8px;
-            z-index: 9999;
-            background: rgba(0,0,0,0.75);
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            text-align: center;
-            pointer-events: none;
-        }
-
     </style>
 
+    <script src="https://meet.jit.si/external_api.js"></script>
 </head>
 
 <body>
 
-<div id="jitsi"></div>
-
-<div id="status">
-    Starting LiveMuse...
-</div>
-
-<script src="https://meet.jit.si/external_api.js"></script>
+<div id="jitsi-container"></div>
 
 <script>
+(function () {
 
-var api = null;
-
-function setStatus(text) {
-
-    var status =
-        document.getElementById("status");
-
-    if (status) {
-        status.innerHTML = text;
-    }
-}
-
-function getRoom() {
-
-    var params =
-        new URLSearchParams(
-            window.location.search
-        );
-
-    return params.get("room") || "";
-}
-
-function startCall() {
-
-    var room = getRoom();
+    var params = new URLSearchParams(window.location.search);
+    var room = params.get("room");
+    var name = params.get("name");
 
     if (!room) {
-
-        setStatus(
-            "ERROR: No room"
-        );
-
+        document.body.innerHTML =
+            "<div style='color:white;text-align:center;padding:30px;font-family:Arial'>" +
+            "Missing room" +
+            "</div>";
         return;
     }
 
-    setStatus(
-        "Connecting..."
-    );
-
-    if (typeof JitsiMeetExternalAPI === "undefined") {
-
-        setStatus(
-            "ERROR: Jitsi API not loaded"
-        );
-
-        return;
+    if (!name) {
+        name = "LiveMuse User";
     }
 
-    if (api !== null) {
-        return;
-    }
+    var container = document.getElementById("jitsi-container");
 
-    api =
-        new JitsiMeetExternalAPI(
-            "meet.jit.si",
-            {
+    var api = new JitsiMeetExternalAPI("meet.jit.si", {
+        roomName: room,
+        parentNode: container,
 
-                roomName: room,
+        userInfo: {
+            displayName: name
+        },
 
-                parentNode:
-                    document.getElementById("jitsi"),
+        configOverwrite: {
+            prejoinConfig: {
+                enabled: false
+            },
 
-                width: "100%",
+            disableAP: true,
 
-                height: "100%",
+            startWithAudioMuted: false,
+            startWithVideoMuted: false
+        },
 
-                userInfo: {
-                    displayName: "LiveMuse User"
-                },
+        interfaceConfigOverwrite: {
+            TOOLBAR_BUTTONS: [
+                "microphone",
+                "camera",
+                "hangup",
+                "tileview"
+            ],
 
-                configOverwrite: {
-
-                    prejoinConfig: {
-                        enabled: false
-                    },
-
-                    enableWelcomePage: false,
-
-                    enableClosePage: false,
-
-                    requireDisplayName: false,
-
-                    startWithAudioMuted: false,
-
-                    startWithVideoMuted: false,
-
-                    disableAP: true,
-
-                    p2p: {
-                        enabled: true
-                    }
-                },
-
-                interfaceConfigOverwrite: {
-
-                    TOOLBAR_BUTTONS: [
-                        "microphone",
-                        "camera",
-                        "hangup",
-                        "chat",
-                        "tileview"
-                    ],
-
-                    MOBILE_APP_PROMO: false
-                }
-            }
-        );
-
-    api.addEventListener(
-        "videoConferenceJoined",
-        function (event) {
-
-            setStatus(
-                ""
-            );
-
-            try {
-
-                if (
-                    window.AndroidBridge
-                    &&
-                    window.AndroidBridge.onJoined
-                ) {
-
-                    window.AndroidBridge.onJoined();
-
-                }
-
-            } catch (e) {
-            }
-
+            SHOW_JITSI_WATERMARK: false,
+            SHOW_WATERMARK_FOR_GUESTS: false,
+            SHOW_BRAND_WATERMARK: false,
+            MOBILE_APP_PROMO: false
         }
-    );
+    });
 
-    api.addEventListener(
-        "videoConferenceLeft",
-        function (event) {
+    api.addEventListener("videoConferenceJoined", function (event) {
 
-            try {
+        console.log("LiveMuse: videoConferenceJoined");
 
-                if (
-                    window.AndroidBridge
-                    &&
-                    window.AndroidBridge.onLeft
-                ) {
+        if (window.Android &&
+            typeof window.Android.onVideoJoined === "function") {
 
-                    window.AndroidBridge.onLeft();
-
-                }
-
-            } catch (e) {
-            }
-
+            window.Android.onVideoJoined();
         }
-    );
+    });
 
-    api.addEventListener(
-        "readyToClose",
-        function () {
+    api.addEventListener("videoConferenceLeft", function (event) {
 
-            try {
+        console.log("LiveMuse: videoConferenceLeft");
 
-                if (
-                    window.AndroidBridge
-                    &&
-                    window.AndroidBridge.onLeft
-                ) {
+        if (window.Android &&
+            typeof window.Android.onVideoLeft === "function") {
 
-                    window.AndroidBridge.onLeft();
-
-                }
-
-            } catch (e) {
-            }
-
+            window.Android.onVideoLeft();
         }
-    );
+    });
 
-    api.addEventListener(
-        "cameraError",
-        function (event) {
+    api.addEventListener("cameraError", function (event) {
 
-            setStatus(
-                "Camera error"
-            );
+        console.log("LiveMuse: cameraError");
 
-            console.log(
-                "Jitsi camera error",
-                event
-            );
+        if (window.Android &&
+            typeof window.Android.onVideoError === "function") {
 
+            window.Android.onVideoError("Camera error");
         }
-    );
+    });
 
-    api.addEventListener(
-        "micError",
-        function (event) {
+    api.addEventListener("micError", function (event) {
 
-            setStatus(
-                "Microphone error"
-            );
+        console.log("LiveMuse: micError");
 
-            console.log(
-                "Jitsi microphone error",
-                event
-            );
+        if (window.Android &&
+            typeof window.Android.onVideoError === "function") {
 
+            window.Android.onVideoError("Microphone error");
         }
-    );
+    });
 
-    api.addEventListener(
-        "errorOccurred",
-        function (event) {
-
-            setStatus(
-                "Jitsi error"
-            );
-
-            console.log(
-                "Jitsi error",
-                event
-            );
-
-        }
-    );
-
-    setStatus(
-        "Jitsi loaded"
-    );
-}
-
-window.onload =
-    function () {
-
-        startCall();
-
-    };
-
+})();
 </script>
 
 </body>
