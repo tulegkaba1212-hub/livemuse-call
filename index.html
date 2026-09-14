@@ -2,28 +2,28 @@
 <html>
 <head>
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     >
 
-    <title>LiveMuse Call</title>
+    <title>LiveMuse</title>
 
     <style>
         html,
         body {
-            margin: 0;
-            padding: 0;
             width: 100%;
             height: 100%;
+            margin: 0;
+            padding: 0;
             overflow: hidden;
             background: #000000;
         }
 
-        #jitsi-container {
+        #jitsi {
             width: 100%;
             height: 100%;
-            background: #000000;
         }
     </style>
 
@@ -32,49 +32,63 @@
 
 <body>
 
-<div id="jitsi-container"></div>
+<div id="jitsi"></div>
 
 <script>
+
 (function () {
 
-    var params = new URLSearchParams(window.location.search);
+    var params = new URLSearchParams(
+        window.location.search
+    );
+
     var room = params.get("room");
     var name = params.get("name");
 
     if (!room) {
         document.body.innerHTML =
-            "<div style='color:white;text-align:center;padding:30px;font-family:Arial'>" +
-            "Missing room" +
+            "<div style='color:white;text-align:center;padding:30px'>" +
+            "Missing call room" +
             "</div>";
+
         return;
     }
 
-    if (!name) {
+    if (!name || name.length === 0) {
         name = "LiveMuse User";
     }
 
-    var container = document.getElementById("jitsi-container");
+    var options = {
 
-    var api = new JitsiMeetExternalAPI("meet.jit.si", {
         roomName: room,
-        parentNode: container,
+
+        parentNode: document.getElementById("jitsi"),
+
+        width: "100%",
+        height: "100%",
 
         userInfo: {
             displayName: name
         },
 
         configOverwrite: {
+
             prejoinConfig: {
-                enabled: false
+                enabled: false,
+                hideDisplayName: false
             },
 
-            disableAP: true,
-
             startWithAudioMuted: false,
-            startWithVideoMuted: false
+
+            startWithVideoMuted: false,
+
+            disableInitialGUM: false,
+
+            enableWelcomePage: false
         },
 
         interfaceConfigOverwrite: {
+
             TOOLBAR_BUTTONS: [
                 "microphone",
                 "camera",
@@ -83,57 +97,93 @@
             ],
 
             SHOW_JITSI_WATERMARK: false,
+
             SHOW_WATERMARK_FOR_GUESTS: false,
+
             SHOW_BRAND_WATERMARK: false,
-            MOBILE_APP_PROMO: false
+
+            MOBILE_APP_PROMO: false,
+
+            DISABLE_JOIN_LEAVE_NOTIFICATIONS: true
         }
-    });
+    };
 
-    api.addEventListener("videoConferenceJoined", function (event) {
+    var api =
+        new JitsiMeetExternalAPI(
+            "meet.jit.si",
+            options
+        );
 
-        console.log("LiveMuse: videoConferenceJoined");
+    api.addEventListener(
+        "videoConferenceJoined",
+        function (event) {
 
-        if (window.Android &&
-            typeof window.Android.onVideoJoined === "function") {
+            console.log(
+                "LIVEMUSE_JOINED"
+            );
 
-            window.Android.onVideoJoined();
+            if (
+                window.Android &&
+                typeof window.Android.onVideoJoined === "function"
+            ) {
+
+                window.Android.onVideoJoined();
+            }
         }
-    });
+    );
 
-    api.addEventListener("videoConferenceLeft", function (event) {
+    api.addEventListener(
+        "videoConferenceLeft",
+        function (event) {
 
-        console.log("LiveMuse: videoConferenceLeft");
+            console.log(
+                "LIVEMUSE_LEFT"
+            );
 
-        if (window.Android &&
-            typeof window.Android.onVideoLeft === "function") {
+            if (
+                window.Android &&
+                typeof window.Android.onVideoLeft === "function"
+            ) {
 
-            window.Android.onVideoLeft();
+                window.Android.onVideoLeft();
+            }
         }
-    });
+    );
 
-    api.addEventListener("cameraError", function (event) {
+    api.addEventListener(
+        "cameraError",
+        function (event) {
 
-        console.log("LiveMuse: cameraError");
+            if (
+                window.Android &&
+                typeof window.Android.onVideoError === "function"
+            ) {
 
-        if (window.Android &&
-            typeof window.Android.onVideoError === "function") {
-
-            window.Android.onVideoError("Camera error");
+                window.Android.onVideoError(
+                    "Camera error"
+                );
+            }
         }
-    });
+    );
 
-    api.addEventListener("micError", function (event) {
+    api.addEventListener(
+        "micError",
+        function (event) {
 
-        console.log("LiveMuse: micError");
+            if (
+                window.Android &&
+                typeof window.Android.onVideoError === "function"
+            ) {
 
-        if (window.Android &&
-            typeof window.Android.onVideoError === "function") {
-
-            window.Android.onVideoError("Microphone error");
+                window.Android.onVideoError(
+                    "Microphone error"
+                );
+            }
         }
-    });
+    );
 
 })();
+
 </script>
 
 </body>
